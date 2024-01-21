@@ -8,6 +8,7 @@ import {
   Script,
   Program,
   JsMinifyOptions,
+  SingleThreadedComments,
 } from "./types";
 export * from "./types";
 import { BundleInput, compileBundleOptions } from "./spack";
@@ -146,6 +147,32 @@ export class Compiler {
     }
 
     return JSON.parse(bindings.parseFileSync(path, toBuffer(options)));
+  }
+
+
+  parseComment(
+    src: string,
+    options: ParseOptions & { isModule: false }
+  ): Promise<[Script, SingleThreadedComments]>;
+  parseComment(src: string, options?: ParseOptions, filename?: string): Promise<[Module, SingleThreadedComments]>;
+  async parseComment(src: string, options?: ParseOptions, filename?: string): Promise<[Program, SingleThreadedComments]> {
+    options = options || { syntax: "ecmascript" };
+    options.syntax = options.syntax || "ecmascript";
+
+    if (!bindings && !!fallbackBindings) {
+      throw new Error('Fallback bindings does not support this interface yet.');
+    } else if (!bindings) {
+      throw new Error('Bindings not found.');
+    }
+
+    if (bindings) {
+      const res = await bindings.parseComment(src, toBuffer(options), filename);
+      return JSON.parse(res);
+    } /*else if (fallbackBindings) {
+      const res = fallbackBindings.parseSync(src, options);
+      return Promise.resolve(res);
+    }*/
+    throw new Error('Bindings not found.');
   }
 
   /**

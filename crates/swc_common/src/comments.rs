@@ -5,6 +5,7 @@ use std::{
 };
 
 use rustc_hash::FxHashMap;
+use serde::{Deserialize, Serialize};
 use swc_atoms::{atom, Atom};
 
 use crate::{
@@ -351,7 +352,7 @@ pub type SingleThreadedCommentsMapInner = FxHashMap<BytePos, Vec<Comment>>;
 pub type SingleThreadedCommentsMap = Rc<RefCell<SingleThreadedCommentsMapInner>>;
 
 /// Single-threaded storage for comments.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct SingleThreadedComments {
     leading: SingleThreadedCommentsMap,
     trailing: SingleThreadedCommentsMap,
@@ -537,7 +538,7 @@ impl SingleThreadedComments {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize)
@@ -556,7 +557,7 @@ impl Spanned for Comment {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize)

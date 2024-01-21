@@ -12,7 +12,10 @@ use swc::{
     config::{ErrorFormat, ParseOptions},
     Compiler,
 };
-use swc_common::{comments::Comments, FileName};
+use swc_common::{
+    comments::{Comments, SingleThreadedComments},
+    FileName,
+};
 use swc_nodejs_common::{deserialize_json, get_deserialized, MapErr};
 
 use crate::{get_compiler, util::try_with};
@@ -29,6 +32,13 @@ pub struct ParseTask {
 pub struct ParseFileTask {
     pub c: Arc<Compiler>,
     pub path: PathBuf,
+    pub options: String,
+}
+
+pub struct ParseCommentTask {
+    pub c: Arc<Compiler>,
+    pub filename: FileName,
+    pub src: String,
     pub options: String,
 }
 
@@ -108,6 +118,43 @@ impl Task for ParseFileTask {
         .convert_err()?;
 
         let ast_json = serde_json::to_string(&program)?;
+
+        Ok(ast_json)
+    }
+
+    fn resolve(&mut self, _env: Env, result: Self::Output) -> napi::Result<Self::JsValue> {
+        Ok(result)
+    }
+}
+
+#[napi]
+impl Task for ParseCommentTask {
+    type JsValue = String;
+    type Output = String;
+
+    fn compute(&mut self) -> napi::Result<Self::Output> {
+        let options: ParseOptions = deserialize_json(&self.options)?;
+        let fm = self
+            .c
+            .cm
+            .new_source_file(self.filename.clone(), self.src.clone());
+
+        let c = SingleThreadedComments::default();
+        let comments = Some(&c as &dyn Comments);
+
+        let program = try_with(self.c.cm.clone(), false, ErrorFormat::Normal, |handler| {
+            self.c.parse_js(
+                fm,
+                handler,
+                options.target,
+                options.syntax,
+                options.is_module,
+                comments,
+            )
+        })
+        .convert_err()?;
+
+        let ast_json = serde_json::to_string(&(program, &c))?;
 
         Ok(ast_json)
     }
@@ -228,4 +275,32 @@ pub fn parse_file(
     let options = String::from_utf8_lossy(options.as_ref()).to_string();
 
     AsyncTask::with_optional_signal(ParseFileTask { c, path, options }, signal)
+}
+
+#[napi]
+pub fn parse_comment(
+    src: String,
+    options: Buffer,
+    filename: Option<String>,
+    signal: Option<AbortSignal>,
+) -> AsyncTask<ParseCommentTask> {
+    swc_nodejs_common::init_default_trace_subscriber();
+
+    let c = get_compiler();
+    let options = String::from_utf8_lossy(options.as_ref()).to_string();
+    let filename = if let Some(value) = filename {
+        FileName::Real(value.into())
+    } else {
+        FileName::Anon
+    };
+
+    AsyncTask::with_optional_signal(
+        ParseCommentTask {
+            c,
+            filename,
+            src,
+            options,
+        },
+        signal,
+    )
 }

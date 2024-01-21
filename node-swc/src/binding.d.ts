@@ -14,6 +14,7 @@ export function parse(src: string, options: Buffer, filename?: string | undefine
 export function parseSync(src: string, opts: Buffer, filename?: string | undefined | null): string
 export function parseFileSync(path: string, opts: Buffer): string
 export function parseFile(path: string, options: Buffer, signal?: AbortSignal | undefined | null): Promise<string>
+export function parseComment(src: string, options: Buffer, filename?: string | undefined | null, signal?: AbortSignal | undefined | null): Promise<string>
 export function print(programJson: string, options: Buffer, signal?: AbortSignal | undefined | null): Promise<TransformOutput>
 export function printSync(program: string, options: Buffer): TransformOutput
 export function transform(src: string, isModule: boolean, options: Buffer, signal?: AbortSignal | undefined | null): Promise<TransformOutput>

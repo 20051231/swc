@@ -2784,3 +2784,18 @@ export type Accessibility = "public" | "protected" | "private";
 export interface Invalid extends Node, HasSpan {
   type: "Invalid";
 }
+
+export type CommentKind = 'line' | 'block'
+
+export interface Comment {
+  kind: CommentKind,
+  span: Span,
+  text: string,
+}
+
+export type SingleThreadedCommentsMap = Record<string, Comment[]>
+
+export interface SingleThreadedComments {
+  leading: SingleThreadedCommentsMap,
+  trailing: SingleThreadedCommentsMap,
+}
